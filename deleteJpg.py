@@ -3,13 +3,13 @@ import optparse
 
 RAW_NAMES = ['.crw', '.cr2', '.arw']
 
-RAW = {'hasselblad':['.3fr']
-       'arriflex'  :['.ari']
+RAW = {'hasselblad':['.3fr'],
+       'arriflex'  :['.ari'],
        'sony'      :['.arw', '.srf', '.sr2'],
        'canon'     :['.crw', '.cr2'],
        'kodak'     :['.k25', '.kdc'],
        'minolta'   :['.mrw'],
-       'nikon'     :['.nef', '.nrw']
+       'nikon'     :['.nef', '.nrw'],
        'olympus'   :['.orf'],
        'pentax'    :['.pef', '.ptx'],
        'red'       :['.R3D'],
@@ -18,19 +18,14 @@ RAW = {'hasselblad':['.3fr']
        'leica'     :['.raw', '.rwl', '.dng'],
        'samsung'   :['.srw']}
 
-def delete_duplicate_jpg(directory, file_types, verbose=True):
+def delete_duplicate_jpg(directory, file_types, verbose):
     '''
     Traverses the directory structure from the given root directory
     and deletes a jpg file if it is a duplicate of raw file format.
     '''
-    if not directory:
-        raise SystemError, 'No directory supplied as argument.'
 
     if not file_types:
         file_types = RAW_NAMES
-
-    print type(file_types)
-    print 'Checking for following formats: %r'%(file_types,)
 
     # traverse all filenames within the root dir
     for dir, dirs, filenames in os.walk(directory):
@@ -39,11 +34,13 @@ def delete_duplicate_jpg(directory, file_types, verbose=True):
             if filename.endswith('.jpg') or filename.endswith('.JPG'):
                 # for every possible raw format
                 for ext in file_types:
-                    raw_name = filename.split('.')[0] + ext
+                    raw_name = os.path.join(dir,filename.split('.')[0] + ext)
+                    raw_upper = os.path.join(dir,filename.split('.')[0] + ext.upper())
                     # check if it exists and remove the jpg if it does
-                    if os.path.exists(os.path.join(dir,raw_name)):
+                    if os.path.exists(raw_name) or os.path.exists(raw_upper):
                         if verbose: print 'Deleting: %s'%os.path.join(dir,filename)
                         os.remove(os.path.join(dir,filename))
+
 
 
 def main():
@@ -55,12 +52,19 @@ def main():
                                              of raw file format.''')
     p.add_option('-d', '--directory', help='the root directory you want to traverse')
     p.add_option('-f', '--file_types', help='list of file types you want to track i.e. [".cr2",".arw"]')
-    p.add_option('-v', '--verbose', help='verbose mode')
+    p.add_option('-v', '--verbose', action='store_true', dest='verbose', default=False, help='verbose mode')
     opt, args = p.parse_args()
+    print len(args)
+    if not opt.directory:
+        p.error('Directory not specified. Use the -d flag to choose a root directory.')
+
     if opt.verbose:
-        print 'Traversing %s '%opt.directory
-    print opt.file_types
+        print 'Walking: %s'%opt.directory
+
     delete_duplicate_jpg(opt.directory, opt.file_types, opt.verbose)
+
+    if opt.verbose:
+        print 'Done!'
 
 
 
